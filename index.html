@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">ToDo App</h1>
+        
+        <form action="/add" method="POST" class="mb-5">
+            <div class="form-group">
+                <label>Add Main Task:</label>
+                <input type="text" name="title" class="form-control" placeholder="What needs to be done?" required autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+        
+        <hr>
+
+        <ul class="list-group">
+            {% if not tasks %}
+                <div class="alert alert-info">No tasks yet. Add one above!</div>
+            {% endif %}
+            
+            {% for task in tasks %}
+                <li class="list-group-item list-group-item-secondary mt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 text-dark {% if task.completed %}completed-text{% endif %}">{{ task.title }}</h4>
+                        
+                        <div class="d-flex align-items-center" style="gap: 10px;">
+                            <form action="/add_sub/{{ task.id }}" method="POST" class="subtask-form m-0">
+                                <input type="text" name="sub_title" class="form-control form-control-sm" placeholder="Add subcategory..." required>
+                                <button type="submit" class="btn btn-success btn-sm font-weight-bold">+</button>
+                            </form>
+                            
+                            <button type="button" class="btn btn-warning btn-sm text-dark" onclick="editItem('/edit/{{ task.id }}', '{{ task.title }}')">Edit</button>
+                            
+                            <form action="/delete/{{ task.id }}" method="POST" class="m-0">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete Task</button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+                
+                {% if task.subtasks %}
+                    {% for sub_id, subtask in task.subtasks.items() %}
+                        <li class="list-group-item sub-task d-flex justify-content-between align-items-center">
+                            <span>
+                                <span class="mr-2 text-muted">&#x21B3;</span> 
+                                <span class="{% if subtask.completed %}completed-text{% endif %}">{{ subtask.title }}</span>
+                            </span>
+                            
+                            <div style="display: flex; gap: 5px;">
+                                <form action="/toggle_sub/{{ task.id }}/{{ sub_id }}" method="POST" class="m-0">
+                                    <button type="submit" class="btn btn-success btn-sm">{% if subtask.completed %}Undo{% else %}Completed{% endif %}</button>
+                                </form>
+                                
+                                <button type="button" class="btn btn-warning btn-sm text-dark" onclick="editItem('/edit_sub/{{ task.id }}/{{ sub_id }}', '{{ subtask.title }}')">Edit</button>
+                                
+                                <form action="/delete_sub/{{ task.id }}/{{ sub_id }}" method="POST" class="m-0">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="list-group-item text-muted sub-task font-italic">No subcategories added yet.</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form id="editForm" method="POST" style="display:none;">
+        <input type="hidden" name="new_title" id="editInput">
+    </form>
+
+    <script>
+        function editItem(actionUrl, currentTitle) {
+            let newTitle = prompt("Edit item:", currentTitle);
+            if (newTitle !== null && newTitle.trim() !== "") {
+                let form = document.getElementById('editForm');
+                form.action = actionUrl;
+                document.getElementById('editInput').value = newTitle.trim();
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>
