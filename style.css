@@ -1,0 +1,27 @@
+body {
+    background-color: #f8f9fa;
+}
+
+h1, h2 {
+    color: #343a40;
+    font-weight: bold;
+}
+
+.sub-task {
+    border-top: none;
+    background-color: #ffffff;
+    padding-left: 2.5rem;
+}
+
+/* Keeps the '+' button neat and inline */
+.subtask-form {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+}
+
+/* Strikethrough effect for completed tasks */
+.completed-text {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
