@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do list</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container mt-3 mt-md-4">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 py-3 px-3 bg-white shadow-sm" style="border: 1px solid #e0e4e8; border-radius: 8px;">
+            <h1 class="m-0 text-primary font-weight-bold mb-3 mb-md-0 text-center" style="font-size: 1.8rem;">ToDo App</h1>
+            <div class="d-flex flex-wrap justify-content-center align-items-center" style="gap: 8px;">
+                <span class="text-secondary font-weight-bold d-none d-sm-inline">Welcome,</span>
+
+                <a href="#" data-toggle="modal" data-target="#userProfileModal" class="badge badge-light border border-secondary p-2 shadow-sm text-dark text-decoration-none user-badge" style="font-size: 0.9rem;">
+                     {{ username }}
+                </a>
+
+                {% if is_admin %}
+                    <a href="/users" class="btn btn-sm btn-danger font-weight-bold shadow-sm">Users</a>
+                {% endif %}
+
+                <a href="/logout" class="btn btn-outline-danger btn-sm shadow-sm font-weight-bold">Logout</a>
+            </div>
+        </div>
+
+        <form action="/add" method="POST" class="mb-4">
+            <div class="d-flex flex-column flex-sm-row" style="gap: 10px;">
+                <input type="text" name="title" class="form-control shadow-sm modern-input flex-grow-1" placeholder="What needs to be done?" required autofocus>
+                <button type="submit" class="btn btn-primary shadow-sm font-weight-bold px-4 py-2 py-sm-1">Add Task</button>
+            </div>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-3">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} shadow-sm py-2 mb-2">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <ul class="list-group pb-5">
+            {% if not tasks %}
+                <div class="alert alert-info shadow-sm py-3 text-center font-weight-bold">No tasks yet. Add one above!</div>
+            {% endif %}
+
+            {% for task in tasks | reverse %}
+                <li class="list-group-item mt-2 p-2 rounded-lg shadow-sm main-task-card z-index-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 text-dark d-flex align-items-center {% if task.completed %}completed-text{% endif %}" style="font-size: 1.2rem;">
+
+                            <button class="btn btn-sm btn-light border mr-2 toggle-btn shadow-sm collapsed" type="button" data-toggle="collapse" data-target="#collapse-{{ task.id }}" aria-expanded="false">
+                                <span class="icon-open font-weight-bold">-</span>
+                                <span class="icon-closed font-weight-bold">&#8597;</span>
+                            </button>
+
+                            <span class="font-weight-bold text-truncate" style="max-width: 130px;">{{ task.title }}</span>
+                            <small class="text-secondary ml-2 font-weight-bold" style="font-size: 0.65em; background: #e9ecef; padding: 3px 8px; border-radius: 12px; white-space: nowrap;">
+                                {{ task.completed_subtasks }}/{{ task.total_subtasks }}
+                            </small>
+                        </h4>
+
+                        <div class="d-flex align-items-center flex-nowrap" style="gap: 4px;">
+                            <button type="button" class="btn btn-success btn-sm font-weight-bold shadow-sm" onclick="addSubtask({{ task.id }})" title="Add Subcategory">
+                                +
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm text-dark shadow-sm" onclick="editItem('/edit/{{ task.id }}', '{{ task.title }}')" title="Edit">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <form action="/delete/{{ task.id }}" method="POST" class="m-0">
+                                <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+
+                <div class="collapse w-100" id="collapse-{{ task.id }}">
+                    <ul class="list-group list-group-flush w-100">
+                        {% if task.subtasks %}
+                            {% for subtask in task.subtasks %}
+                                <li class="list-group-item sub-task d-flex justify-content-between align-items-start p-2 my-1 shadow-sm rounded-lg">
+
+                                    <div class="d-flex flex-column w-100">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <span class="mr-2 text-primary font-weight-bold">&#x21B3;</span>
+                                            <span class="font-weight-bold text-dark {% if subtask.completed %}completed-text{% endif %}" style="font-size: 1.05rem;">
+                                                {{ subtask.title }}
+                                            </span>
+
+                                            {% if subtask.kw_total > 0 %}
+                                                <small class="text-secondary ml-2 font-weight-bold" style="font-size: 0.8em;">
+                                                    ({{ subtask.kw_completed }}/{{ subtask.kw_total }})
+                                                </small>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="pl-3">
+                                            {% for kw in subtask.keywords %}
+                                                <span class="keyword-badge shadow-sm {% if kw.completed %}kw-completed{% endif %}"
+                                                      onclick="toggleKeyword({{ kw.id }})"
+                                                      oncontextmenu="showContextMenu(event, {{ kw.id }}, '{{ kw.title }}'); return false;">
+                                                    {{ kw.title }}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center flex-nowrap pt-1" style="gap: 4px; min-width: fit-content;">
+                                        <button type="button" class="btn btn-light border btn-sm font-weight-bold px-2 py-1 shadow-sm" onclick="addKeyword({{ subtask.id }})" title="Add Keyword">
+                                            +
+                                        </button>
+
+                                        <form action="/toggle_sub/{{ task.id }}/{{ subtask.id }}" method="POST" class="m-0">
+                                            <button type="submit" class="btn {% if subtask.completed %}btn-success{% else %}btn-secondary{% endif %} btn-sm shadow-sm" title="Mark Completed">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        
+                                        <button type="button" class="btn btn-warning btn-sm text-dark shadow-sm" onclick="editItem('/edit_sub/{{ task.id }}/{{ subtask.id }}', '{{ subtask.title }}')" title="Edit">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <form action="/delete_sub/{{ task.id }}/{{ subtask.id }}" method="POST" class="m-0">
+                                            <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form id="editForm" method="POST" style="display:none;">
+        <input type="hidden" name="new_title" id="editInput">
+    </form>
+    <form id="addSubtaskForm" method="POST" style="display:none;">
+        <input type="hidden" name="sub_title" id="addSubtaskInput">
+    </form>
+    <form id="addKeywordForm" method="POST" style="display:none;">
+        <input type="hidden" name="title" id="addKeywordInput">
+    </form>
+    <form id="toggleKeywordForm" method="POST" style="display:none;"></form>
+    <form id="editKeywordForm" method="POST" style="display:none;">
+        <input type="hidden" name="new_title" id="editKeywordInput">
+    </form>
+    <form id="deleteKeywordForm" method="POST" style="display:none;"></form>
+
+    <div id="keywordContextMenu" class="shadow-sm">
+        <div class="context-item" onclick="editKeywordAction()">✏️ Edit</div>
+        <div class="context-item text-danger" onclick="deleteKeywordAction()">🗑️ Delete</div>
+    </div>
+
+    <div class="modal fade" id="userProfileModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-light py-3">
+                    <h5 class="modal-title font-weight-bold text-dark">User Profile</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-2 text-secondary"><strong>Username:</strong> <span class="text-dark">{{ username }}</span></p>
+                    <p class="mb-2 text-secondary"><strong>Total tasks created:</strong> <span class="badge badge-primary px-2 py-1">{{ total_tasks_count }}</span></p>
+                    <p class="mb-4 text-secondary"><strong>Total tasks completed:</strong> <span class="badge badge-success px-2 py-1">{{ total_tasks_completed }}</span></p>
+
+                    <div class="d-flex align-items-center mb-3 text-secondary">
+                        <strong>Email Address:</strong>&nbsp;
+                        <span class="text-dark">{{ email }}</span>
+                        <button class="btn btn-sm btn-outline-warning ml-3 p-1 font-weight-bold" style="font-size: 0.8rem;" onclick="document.getElementById('emailEditForm').style.display='flex';">
+                            &#x270E; Edit
+                        </button>
+                    </div>
+
+                    <form id="emailEditForm" action="/update_email" method="POST" style="display: none;" class="mt-2">
+                        <div class="d-flex">
+                            <input type="email" name="email" class="form-control form-control-sm mr-2 shadow-sm" placeholder="Enter new email..." required>
+                            <button type="submit" class="btn btn-success btn-sm shadow-sm font-weight-bold">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let openTasks = JSON.parse(localStorage.getItem('todo_open_tabs')) || [];
+            
+            openTasks.forEach(function(taskId) {
+                let collapseDiv = $('#collapse-' + taskId);
+                let toggleBtn = $('button[data-target="#collapse-' + taskId + '"]');
+                
+                if (collapseDiv.length) {
+                    collapseDiv.addClass('show'); 
+                    toggleBtn.attr('aria-expanded', 'true'); 
+                    toggleBtn.removeClass('collapsed');
+                }
+            });
+
+            $('.collapse').on('shown.bs.collapse', function (e) {
+                if(e.target.id.startsWith('collapse-')) {
+                    let id = e.target.id.replace('collapse-', '');
+                    let tasks = JSON.parse(localStorage.getItem('todo_open_tabs')) || [];
+                    if (!tasks.includes(id)) {
+                        tasks.push(id);
+                        localStorage.setItem('todo_open_tabs', JSON.stringify(tasks));
+                    }
+                }
+            });
+
+            $('.collapse').on('hidden.bs.collapse', function (e) {
+                if(e.target.id.startsWith('collapse-')) {
+                    let id = e.target.id.replace('collapse-', '');
+                    let tasks = JSON.parse(localStorage.getItem('todo_open_tabs')) || [];
+                    tasks = tasks.filter(t => t !== id);
+                    localStorage.setItem('todo_open_tabs', JSON.stringify(tasks));
+                }
+            });
+        });
+
+        function editItem(actionUrl, currentTitle) {
+            let newTitle = prompt("Edit item:", currentTitle);
+            if (newTitle !== null && newTitle.trim() !== "") {
+                let form = document.getElementById('editForm');
+                form.action = actionUrl;
+                document.getElementById('editInput').value = newTitle.trim();
+                form.submit();
+            }
+        }
+
+        function addSubtask(taskId) {
+            let title = prompt("Enter new subcategory:");
+            if (title !== null && title.trim() !== '') {
+                let form = document.getElementById('addSubtaskForm');
+                form.action = '/add_sub/' + taskId;
+                document.getElementById('addSubtaskInput').value = title.trim();
+                form.submit();
+            }
+        }
+
+        function addKeyword(subtaskId) {
+            let title = prompt("Enter new keyword:");
+            if (title !== null && title.trim() !== '') {
+                let form = document.getElementById('addKeywordForm');
+                form.action = '/add_keyword/' + subtaskId;
+                document.getElementById('addKeywordInput').value = title.trim();
+                form.submit();
+            }
+        }
+
+        function toggleKeyword(keywordId) {
+            let form = document.getElementById('toggleKeywordForm');
+            form.action = '/toggle_keyword/' + keywordId;
+            form.submit();
+        }
+
+        let contextMenu = document.getElementById('keywordContextMenu');
+        let currentKeywordId = null;
+        let currentKeywordTitle = '';
+
+        function showContextMenu(e, id, title) {
+            e.preventDefault();
+            currentKeywordId = id;
+            currentKeywordTitle = title;
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.display = 'block';
+        }
+
+        document.addEventListener('click', () => {
+            contextMenu.style.display = 'none';
+        });
+
+        function editKeywordAction() {
+            let newTitle = prompt("Edit keyword:", currentKeywordTitle);
+            if (newTitle !== null && newTitle.trim() !== '') {
+                let form = document.getElementById('editKeywordForm');
+                form.action = '/edit_keyword/' + currentKeywordId;
+                document.getElementById('editKeywordInput').value = newTitle.trim();
+                form.submit();
+            }
+        }
+
+        function deleteKeywordAction() {
+            if (confirm("Are you sure you want to delete this keyword?")) {
+                let form = document.getElementById('deleteKeywordForm');
+                form.action = '/delete_keyword/' + currentKeywordId;
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - ToDo App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container mt-3 mt-md-4">
+        
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 pb-3 border-bottom text-center text-md-left">
+            <h3 class="m-0 text-danger mb-3 mb-md-0">Admin Dashboard</h3>
+            <div class="d-flex flex-wrap justify-content-center align-items-center">
+                <span class="mr-3 text-secondary mb-2 mb-sm-0">Admin: <strong>{{ username }}</strong></span>
+                <a href="/" class="btn btn-outline-secondary btn-sm mr-2 mb-2 mb-sm-0">Back to Tasks</a>
+                <a href="/logout" class="btn btn-outline-danger btn-sm mb-2 mb-sm-0">Logout</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} shadow-sm">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white font-weight-bold">
+                Registered Users
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="py-2 pl-3" style="width: 5%;">ID</th>
+                                <th class="py-2" style="width: 20%;">Username</th>
+                                <th class="py-2" style="width: 30%;">Email Address</th>
+                                <th class="py-2 text-center" style="width: 15%;">Tasks</th>
+                                <th class="py-2 text-center" style="width: 10%;">Role</th>
+                                <th class="text-right py-2 pr-3" style="width: 20%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td class="align-middle py-2 pl-3">{{ user.id }}</td>
+                                <td class="align-middle py-2 font-weight-bold">{{ user.username }}</td>
+                                <td class="align-middle py-2 text-muted">{{ user.email if user.email else 'No email provided' }}</td>
+                                
+                                <td class="align-middle py-2 text-center">
+                                    <span class="badge badge-info shadow-sm" title="Total tasks created" style="cursor: help;">{{ user.task_count }}</span>
+                                    <span class="badge badge-success shadow-sm ml-1" title="Total tasks completed" style="cursor: help;">{{ user.completed_task_count }}</span>
+                                </td>
+                                <td class="align-middle py-2 text-center">
+                                    {% if user.is_admin %}
+                                        <span class="badge badge-danger">Admin</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">User</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle py-2 pr-3">
+                                    <div class="d-flex flex-column flex-lg-row justify-content-end align-items-stretch align-items-lg-center">
+                                        
+                                        <button type="button" class="btn btn-sm btn-primary shadow-sm mb-1 mb-lg-0 mr-lg-1" data-toggle="modal" data-target="#profileModal{{ user.id }}">
+                                            Profile
+                                        </button>
+
+                                        {% if user.username == 'baziboo' %}
+                                            <button type="button" class="btn btn-sm btn-warning shadow-sm mb-1 mb-lg-0 mr-lg-1 font-weight-bold" disabled style="opacity: 0.4;" title="The owner account cannot be demoted">
+                                                Demote
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger shadow-sm" disabled style="opacity: 0.4;" title="The owner account cannot be deleted">
+                                                Delete
+                                            </button>
+                                        {% else %}
+                                            {% if user.is_admin %}
+                                                <form action="/admin/demote/{{ user.id }}" method="POST" class="m-0 mb-1 mb-lg-0 mr-lg-1 d-flex">
+                                                    <button type="submit" class="btn btn-sm btn-warning shadow-sm w-100 font-weight-bold" onclick="return confirm('Revoke Admin rights for {{ user.username }}?');">Demote</button>
+                                                </form>
+                                            {% else %}
+                                                <form action="/admin/promote/{{ user.id }}" method="POST" class="m-0 mb-1 mb-lg-0 mr-lg-1 d-flex">
+                                                    <button type="submit" class="btn btn-sm btn-success shadow-sm w-100" onclick="return confirm('Promote {{ user.username }} to Admin?');">Promote</button>
+                                                </form>
+                                            {% endif %}
+
+                                            <form action="/admin/delete/{{ user.id }}" method="POST" class="m-0 d-flex">
+                                                <button type="submit" class="btn btn-sm btn-danger shadow-sm w-100" onclick="return confirm('Permanently delete {{ user.username }} and ALL their tasks?');" title="Delete Account">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <div class="modal fade" id="profileModal{{ user.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content border-0 shadow-lg">
+                                        <div class="modal-header bg-light py-2">
+                                            <h5 class="modal-title font-weight-bold text-dark">User Profile: {{ user.username }}</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body p-4">
+                                            <p class="mb-2 text-secondary"><strong>System ID:</strong> <span class="text-dark">{{ user.id }}</span></p>
+                                            <p class="mb-2 text-secondary"><strong>Username:</strong> <span class="text-dark">{{ user.username }}</span></p>
+                                            <p class="mb-2 text-secondary"><strong>Email Address:</strong> <span class="text-dark">{{ user.email if user.email else 'Not provided' }}</span></p>
+                                            
+                                            <p class="mb-2 text-secondary"><strong>Total tasks created:</strong> <span class="badge badge-primary px-2 py-1">{{ user.task_count }}</span></p>
+                                            <p class="mb-3 text-secondary"><strong>Total tasks completed:</strong> <span class="badge badge-success px-2 py-1">{{ user.completed_task_count }}</span></p>
+                                            
+                                            <p class="mb-0 text-secondary"><strong>Account Status:</strong> {% if user.is_admin %}<span class="text-danger font-weight-bold">Administrator</span>{% else %}Standard User{% endif %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
